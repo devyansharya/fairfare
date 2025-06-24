@@ -193,6 +193,129 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Fare estimation endpoint
+  app.post("/api/fare-estimates", async (req, res) => {
+    try {
+      const { pickup, destination, distance, duration } = req.body;
+      
+      if (!pickup || !destination || !distance || !duration) {
+        return res.status(400).json({ message: "Missing required parameters" });
+      }
+
+      const distanceKm = distance / 1000;
+      const durationMin = duration / 60;
+      
+      // Calculate surge multiplier based on time
+      const getSurgeMultiplier = () => {
+        const hour = new Date().getHours();
+        if ((hour >= 8 && hour <= 10) || (hour >= 18 && hour <= 21)) {
+          return 1.2 + Math.random() * 0.3;
+        }
+        if (hour >= 23 || hour <= 5) {
+          return 1.1 + Math.random() * 0.2;
+        }
+        return 1.0 + Math.random() * 0.1;
+      };
+
+      const surge = getSurgeMultiplier();
+
+      // Ola calculation
+      const olaConfig = distanceKm > 10 ? 
+        { baseFare: 40, perKm: 15, perMin: 2, platformFee: 8 } :
+        { baseFare: 25, perKm: 11, perMin: 1.5, platformFee: 5 };
+      
+      const olaDistanceFare = Math.max(0, distanceKm - 2) * olaConfig.perKm;
+      const olaTimeFare = durationMin * olaConfig.perMin;
+      const olaSubtotal = (olaConfig.baseFare + olaDistanceFare + olaTimeFare) * surge;
+      const olaTaxes = olaSubtotal * 0.05;
+      const olaTotal = olaSubtotal + olaConfig.platformFee + olaTaxes;
+
+      // Uber calculation
+      const uberConfig = distanceKm > 8 ? 
+        { baseFare: 50, perKm: 18, perMin: 2.5, platformFee: 10 } :
+        { baseFare: 30, perKm: 12, perMin: 1.8, platformFee: 6 };
+      
+      const uberDistanceFare = distanceKm * uberConfig.perKm;
+      const uberTimeFare = durationMin * uberConfig.perMin;
+      const uberSubtotal = (uberConfig.baseFare + uberDistanceFare + uberTimeFare) * surge;
+      const uberTaxes = uberSubtotal * 0.05;
+      const uberTotal = uberSubtotal + uberConfig.platformFee + uberTaxes;
+
+      // Namma Yatri calculation (only for Bangalore area)
+      const fareEstimates = [
+        {
+          serviceId: 'ola',
+          serviceName: 'Ola',
+          vehicleType: distanceKm > 10 ? 'Prime' : 'Mini',
+          fare: {
+            baseFare: olaConfig.baseFare,
+            distanceFare: olaDistanceFare,
+            timeFare: olaTimeFare,
+            surgeMultiplier: surge,
+            platformFee: olaConfig.platformFee,
+            taxes: olaTaxes,
+            total: Math.round(olaTotal)
+          },
+          estimatedTime: `${Math.ceil(durationMin)} min`,
+          features: ['AC', 'Music', 'GPS Tracking'],
+          deepLink: `https://book.olacabs.com/?serviceType=${distanceKm > 10 ? 'prime' : 'mini'}&utm_source=farefair`
+        },
+        {
+          serviceId: 'uber',
+          serviceName: 'Uber',
+          vehicleType: distanceKm > 8 ? 'Premier' : 'Go',
+          fare: {
+            baseFare: uberConfig.baseFare,
+            distanceFare: uberDistanceFare,
+            timeFare: uberTimeFare,
+            surgeMultiplier: surge,
+            platformFee: uberConfig.platformFee,
+            taxes: uberTaxes,
+            total: Math.round(uberTotal)
+          },
+          estimatedTime: `${Math.ceil(durationMin)} min`,
+          features: ['AC', 'Wi-Fi', 'Uber Safety'],
+          deepLink: 'https://m.uber.com/looking?utm_source=farefair'
+        }
+      ];
+
+      // Add Namma Yatri only for Bangalore area
+      const isBangalore = pickup.address?.toLowerCase().includes('bengaluru') || 
+                         pickup.address?.toLowerCase().includes('bangalore') ||
+                         (pickup.lat >= 12.8 && pickup.lat <= 13.2 && pickup.lng >= 77.4 && pickup.lng <= 77.8);
+
+      if (isBangalore) {
+        const nammaBaseFare = 25;
+        const nammaPerKm = 12;
+        const nammaPickupFee = Math.min(10, distanceKm * 0.8);
+        const nammaTotal = nammaBaseFare + (distanceKm * nammaPerKm) + nammaPickupFee;
+
+        fareEstimates.push({
+          serviceId: 'namma-yatri',
+          serviceName: 'Namma Yatri',
+          vehicleType: 'Auto',
+          fare: {
+            baseFare: nammaBaseFare,
+            distanceFare: distanceKm * nammaPerKm,
+            timeFare: 0,
+            surgeMultiplier: 1.0,
+            platformFee: nammaPickupFee,
+            taxes: 0,
+            total: Math.round(nammaTotal)
+          },
+          estimatedTime: `${Math.ceil(durationMin)} min`,
+          features: ['Open Source', 'No Surge Pricing', 'Driver Friendly', 'Transparent Pricing'],
+          deepLink: 'https://nammayatri.in'
+        });
+      }
+
+      res.json({ fareEstimates: fareEstimates.sort((a, b) => a.fare.total - b.fare.total) });
+    } catch (error) {
+      console.error("Fare estimation error:", error);
+      res.status(500).json({ message: "Failed to calculate fares" });
+    }
+  });
+
   const httpServer = createServer(app);
 
   return httpServer;
