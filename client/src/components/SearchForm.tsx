@@ -106,29 +106,7 @@ const SearchForm = () => {
     const isDropBlr = destination.address.toLowerCase().includes('bengaluru');
     const allowNammaYatri = isPickupBlr && isDropBlr;
 
-    try {
-      const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/api/fare`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          pickup: pickup.address,
-          drop: destination.address
-        })
-      });
-
-      const data = await res.json();
-
-      const filteredFares = data.fareEstimates.filter(
-        (fare: any) =>
-          fare.provider !== 'nammaYatri' || allowNammaYatri
-      );
-
-      console.log("🚕 Filtered Fares:", filteredFares);
-      // 💡 You can store this in state and show in UI if needed
-
-    } catch (err) {
-      console.error("❌ Failed to fetch fare estimates", err);
-    }
+    // This function is not being used anymore - search is handled by Index component
   };
 
   return (
