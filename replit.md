@@ -86,9 +86,10 @@ Fairfare is a modern web application that allows users to compare cab prices acr
 ## Deployment Strategy
 
 ### Development Environment
+- Monorepo structure with frontend/backend integration
 - Replit-based development with integrated PostgreSQL
 - Hot reload enabled through Vite middleware
-- Port 5000 for local development
+- Port 5000 for Express server with Vite proxy for API calls
 - Environment-based configuration
 
 ### Production Deployment
@@ -139,6 +140,12 @@ Fairfare is a modern web application that allows users to compare cab prices acr
   - Enhanced fastest pickup calculation with accurate time parsing
   - Resolved all API fetch errors and ensured consistent Namma Yatri service display
   - Successfully tested end-to-end functionality with real location search and fare comparison
+- June 24, 2025: Migrated from Replit Agent to proper monorepo structure
+  - Configured Vite proxy to handle API calls to Express server
+  - Fixed fare estimation to use server-side calculations via /api/fare-estimates endpoint
+  - Implemented proper monorepo architecture with integrated frontend/backend
+  - Database successfully configured with PostgreSQL and test user created
+  - Login and authentication system working properly
 
 ## User Preferences
 
