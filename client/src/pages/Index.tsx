@@ -58,79 +58,43 @@ const Index = () => {
       
       // Calculate route using distance formula
       const { calculateRoute } = await import('../lib/distanceCalculation');
-      const { FareCalculator } = await import('../lib/fareCalculation');
-      
       const route = calculateRoute(searchData.pickup, searchData.destination);
       
-      // Get fares from all services with error handling
-      let olafares, uberFares;
-      
-      try {
-        olafares = FareCalculator.calculateOlaFare({
+      // Call server API for fare estimates
+      const response = await apiRequest('/api/fare-estimates', {
+        method: 'POST',
+        body: JSON.stringify({
+          pickup: searchData.pickup,
+          destination: searchData.destination,
           distance: route.distance * 1000, // Convert to meters
-          duration: route.duration * 60, // Convert to seconds
-          distanceText: route.distanceText,
-          durationText: route.durationText
-        });
-      } catch (error) {
-        console.error('Ola fare calculation error:', error);
-        throw new Error('Unable to calculate Ola fares');
+          duration: route.duration * 60 // Convert to seconds
+        })
+      });
+      
+      const { fareEstimates } = response;
+      
+      if (!fareEstimates || fareEstimates.length === 0) {
+        throw new Error('No fare estimates available');
       }
       
-      try {
-        uberFares = FareCalculator.calculateUberFare({
-          distance: route.distance * 1000,
-          duration: route.duration * 60,
-          distanceText: route.distanceText,
-          durationText: route.durationText
-        });
-      } catch (error) {
-        console.error('Uber fare calculation error:', error);
-        throw new Error('Unable to calculate Uber fares');
-      }
-      
-      // Always include Namma Yatri with calculated fares (API often unavailable)
-      const nammaYatriFare = {
-        serviceId: 'namma-yatri',
-        serviceName: 'Namma Yatri',
-        vehicleType: 'Auto',
-        fare: {
-          baseFare: 25,
-          distanceFare: route.distance * 12,
-          timeFare: 0,
-          surgeMultiplier: 1.0,
-          platformFee: Math.min(10, route.distance * 0.8),
-          taxes: 0,
-          total: 25 + (route.distance * 12) + Math.min(10, route.distance * 0.8)
-        },
-        estimatedTime: route.durationText,
-        features: ['Open Source', 'No Surge Pricing', 'Driver Friendly', 'Transparent Pricing'],
-        estimateId: undefined,
-        searchId: undefined
-      };
-      
-      const nammaYatriFares = [nammaYatriFare];
-      
-      const allFares = [olafares, uberFares, ...nammaYatriFares];
-      
-      // Convert to CabService format with real data only
-      const cabServices = allFares.map((fare, index) => ({
+      // Convert to CabService format
+      const cabServices = fareEstimates.map((fare: any, index: number) => ({
         id: `${fare.serviceId}-${index}`,
         name: fare.serviceName,
         logo: `/logos/${fare.serviceId}.png`,
-        price: Math.round(fare.fare.total),
-        originalPrice: undefined, // Remove fake original prices
-        rating: undefined, // Remove fake ratings
-        reviews: undefined, // Remove fake reviews
+        price: fare.fare.total,
+        originalPrice: undefined,
+        rating: undefined,
+        reviews: undefined,
         estimatedTime: fare.estimatedTime,
-        capacity: fare.vehicleType.includes('AUTO') || fare.vehicleType.includes('Auto') ? 3 : 4,
+        capacity: fare.vehicleType.includes('Auto') ? 3 : 4,
         features: fare.features,
         isRecommended: fare.serviceId === 'namma-yatri',
         carType: fare.vehicleType,
         estimateId: fare.estimateId,
         searchId: fare.searchId,
         serviceData: fare
-      })).sort((a, b) => a.price - b.price);
+      }));
       
       setSearchResults(cabServices);
       setHasSearched(true);
