@@ -29,7 +29,7 @@ const SearchForm = ({ onSearch }: SearchFormProps) => {
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
   const [time, setTime] = useState(() => {
     const now = new Date();
-    now.setMinutes(now.getMinutes() + 15);
+    now.setMinutes(now.getMinutes() + 5);
     return now.toTimeString().slice(0, 5);
   });
 
@@ -45,27 +45,19 @@ const SearchForm = ({ onSearch }: SearchFormProps) => {
     const now = new Date();
     const selected = new Date(date);
     if (selected.toDateString() === now.toDateString()) {
-      now.setMinutes(now.getMinutes() + 15);
+      now.setMinutes(now.getMinutes() + 2);
       return now.toTimeString().slice(0, 5);
     }
     return "00:00";
   };
 
   const handleTimeChange = (newTime: string) => {
-    const now = new Date();
-    const selected = new Date(date);
-    if (selected.toDateString() === now.toDateString() && newTime < getMinTime()) {
-      alert(`Please select a time after ${getMinTime()} for today`);
-      return;
-    }
     setTime(newTime);
   };
 
   const handleDateChange = (newDate: string) => {
     setDate(newDate);
-    if (newDate === getMinDate() && time < getMinTime()) {
-      setTime(getMinTime());
-    }
+    // Don't auto-adjust time anymore - let user set any time they want
   };
 
   const swapLocations = () => {
