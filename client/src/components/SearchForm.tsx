@@ -19,7 +19,11 @@ export interface SearchData {
   time: string;
 }
 
-const SearchForm = () => {
+interface SearchFormProps {
+  onSearch: (data: SearchData) => void;
+}
+
+const SearchForm = ({ onSearch }: SearchFormProps) => {
   const [pickup, setPickup] = useState<LocationData | null>(null);
   const [destination, setDestination] = useState<LocationData | null>(null);
   const [date, setDate] = useState(() => new Date().toISOString().split('T')[0]);
@@ -97,16 +101,26 @@ const SearchForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("✅ Compare button clicked");
-    if (!pickup || !destination) return;
+    
+    if (!pickup || !destination) {
+      console.log("❌ Missing pickup or destination");
+      return;
+    }
 
     const selectedDateTime = new Date(`${date}T${time}`);
-    if (selectedDateTime <= new Date()) return;
+    if (selectedDateTime <= new Date()) {
+      console.log("❌ Invalid date/time");
+      return;
+    }
 
-    const isPickupBlr = pickup.address.toLowerCase().includes('bengaluru');
-    const isDropBlr = destination.address.toLowerCase().includes('bengaluru');
-    const allowNammaYatri = isPickupBlr && isDropBlr;
-
-    // This function is not being used anymore - search is handled by Index component
+    console.log("📍 Calling onSearch with:", { pickup, destination, date, time });
+    
+    onSearch({
+      pickup,
+      destination,
+      date,
+      time
+    });
   };
 
   return (
