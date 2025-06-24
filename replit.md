@@ -146,6 +146,9 @@ Fairfare is a modern web application that allows users to compare cab prices acr
   - Implemented proper monorepo architecture with integrated frontend/backend
   - Database successfully configured with PostgreSQL and test user created
   - Login and authentication system working properly
+  - Updated fare calculations with realistic current market rates for Bangalore
+  - Added demo rewards for points redemption system (discounts, cashback, vouchers)
+  - Fixed time validation to allow flexible booking times
 
 ## User Preferences
 
