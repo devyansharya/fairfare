@@ -108,8 +108,11 @@ const SearchForm = ({ onSearch }: SearchFormProps) => {
     }
 
     const selectedDateTime = new Date(`${date}T${time}`);
-    if (selectedDateTime <= new Date()) {
-      console.log("❌ Invalid date/time");
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 2); // Allow booking just 2 minutes ahead
+    
+    if (selectedDateTime < now) {
+      console.log("❌ Invalid date/time - must be at least 2 minutes from now");
       return;
     }
 
