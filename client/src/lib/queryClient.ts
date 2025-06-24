@@ -18,13 +18,9 @@ const queryClient = new QueryClient({
 export { queryClient };
 
 export const apiRequest = async (url: string, options: RequestInit = {}) => {
-  // Ensure we're using the correct base URL for API calls
-  const baseUrl = import.meta.env.DEV ? '' : '';  // In dev mode, proxy handles this
-  const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;
+  console.log('Making API request to:', url);
   
-  console.log('Making API request to:', fullUrl);
-  
-  const res = await fetch(fullUrl, {
+  const res = await fetch(url, {
     headers: {
       'Content-Type': 'application/json',
       ...options.headers,
