@@ -219,27 +219,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const surge = getSurgeMultiplier();
 
-      // Ola calculation
+      // Ola calculation - realistic Bangalore pricing
       const olaConfig = distanceKm > 10 ? 
-        { baseFare: 40, perKm: 15, perMin: 2, platformFee: 8 } :
-        { baseFare: 25, perKm: 11, perMin: 1.5, platformFee: 5 };
+        { baseFare: 35, perKm: 9, perMin: 0.8, platformFee: 5 } :
+        { baseFare: 25, perKm: 7, perMin: 0.6, platformFee: 3 };
       
-      const olaDistanceFare = Math.max(0, distanceKm - 2) * olaConfig.perKm;
+      const olaDistanceFare = distanceKm * olaConfig.perKm;
       const olaTimeFare = durationMin * olaConfig.perMin;
-      const olaSubtotal = (olaConfig.baseFare + olaDistanceFare + olaTimeFare) * surge;
-      const olaTaxes = olaSubtotal * 0.05;
-      const olaTotal = olaSubtotal + olaConfig.platformFee + olaTaxes;
+      const olaSubtotal = olaConfig.baseFare + olaDistanceFare + olaTimeFare;
+      const olaSurged = olaSubtotal * surge;
+      const olaTaxes = olaSurged * 0.05;
+      const olaTotal = olaSurged + olaConfig.platformFee + olaTaxes;
 
-      // Uber calculation
+      // Uber calculation - realistic Bangalore pricing
       const uberConfig = distanceKm > 8 ? 
-        { baseFare: 50, perKm: 18, perMin: 2.5, platformFee: 10 } :
-        { baseFare: 30, perKm: 12, perMin: 1.8, platformFee: 6 };
+        { baseFare: 40, perKm: 10, perMin: 1, platformFee: 6 } :
+        { baseFare: 30, perKm: 8, perMin: 0.8, platformFee: 4 };
       
       const uberDistanceFare = distanceKm * uberConfig.perKm;
       const uberTimeFare = durationMin * uberConfig.perMin;
-      const uberSubtotal = (uberConfig.baseFare + uberDistanceFare + uberTimeFare) * surge;
-      const uberTaxes = uberSubtotal * 0.05;
-      const uberTotal = uberSubtotal + uberConfig.platformFee + uberTaxes;
+      const uberSubtotal = uberConfig.baseFare + uberDistanceFare + uberTimeFare;
+      const uberSurged = uberSubtotal * surge;
+      const uberTaxes = uberSurged * 0.05;
+      const uberTotal = uberSurged + uberConfig.platformFee + uberTaxes;
 
       // Namma Yatri calculation (only for Bangalore area)
       const fareEstimates = [
@@ -285,9 +287,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
                          (pickup.lat >= 12.8 && pickup.lat <= 13.2 && pickup.lng >= 77.4 && pickup.lng <= 77.8);
 
       if (isBangalore) {
-        const nammaBaseFare = 25;
-        const nammaPerKm = 12;
-        const nammaPickupFee = Math.min(10, distanceKm * 0.8);
+        const nammaBaseFare = 20;
+        const nammaPerKm = 6;
+        const nammaPickupFee = 5;
         const nammaTotal = nammaBaseFare + (distanceKm * nammaPerKm) + nammaPickupFee;
 
         fareEstimates.push({
